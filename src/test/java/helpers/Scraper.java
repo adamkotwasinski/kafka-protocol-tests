@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -27,8 +28,8 @@ public class Scraper {
     private static final String FILTER_NAME = "myfilter"; // filter name in Envoy's yaml file
     private static final String FILTER_METRIC_PREFIX = String.format("kafka.%s.", FILTER_NAME);
 
-    private final TreeMap<String, Long> initialMetrics;
-    private final TreeMap<String, Long> finalMetrics;
+    private final Map<String, Long> initialMetrics;
+    private final Map<String, Long> finalMetrics;
 
     public Scraper() {
         this.initialMetrics = new TreeMap<>();
@@ -41,9 +42,20 @@ public class Scraper {
 
     public void collectFinalMetrics() {
         collectMetrics(this.finalMetrics);
+
+        final Map<String, Long> differences = new TreeMap<>();
+        for (final String key : this.finalMetrics.keySet()) {
+            final long initialValue = this.initialMetrics.getOrDefault(key, 0L);
+            final long finalValue = this.finalMetrics.get(key);
+            if (finalValue != initialValue) {
+                final long difference = finalValue - initialValue;
+                differences.put(key, difference);
+            }
+        }
+        LOG.info("Differences: {}", differences);
     }
 
-    private void collectMetrics(/* out */ final TreeMap<String, Long> sink) {
+    private void collectMetrics(/* out */ final Map<String, Long> sink) {
         final String rawData = getRawData();
         final List<String> rows = Splitter.on("\n").splitToList(rawData);
         final List<String> filterCounterRows = rows.stream()
