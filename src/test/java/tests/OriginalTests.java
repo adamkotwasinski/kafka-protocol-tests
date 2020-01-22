@@ -18,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AlterConfigsResult;
 import org.apache.kafka.clients.admin.Config;
@@ -34,19 +33,18 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import com.google.common.collect.Iterables;
+
+import helpers.Configs;
 
 /**
  * Contains tests that are right now present in 'kafka_broker_integration_test.py'.
@@ -57,16 +55,11 @@ public class OriginalTests
     @Rule
     public final Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
 
-    private static final String ENVOY_KAFKA_ADDRESS = "localhost:19092";
-
     // replaces Python test 'test_kafka_consumer_with_no_messages_received'
     @Test
     public void shouldPoll() {
 
-        final Properties consumerProperties = new Properties();
-        consumerProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ENVOY_KAFKA_ADDRESS);
-        consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        final Properties consumerProperties = Configs.makeConsumerConfiguration();
         consumerProperties.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 500);
 
         final KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties);
@@ -101,10 +94,7 @@ public class OriginalTests
         final int partition = 0;
         final int messagesToSend = 100;
 
-        final Properties producerProperties = new Properties();
-        producerProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ENVOY_KAFKA_ADDRESS);
-        producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        final Properties producerProperties = Configs.makeProducerConfiguration();
         final KafkaProducer<String, String> producer = new KafkaProducer<>(producerProperties);
 
         try {
@@ -121,10 +111,7 @@ public class OriginalTests
             producer.close();
         }
 
-        final Properties consumerProperties = new Properties();
-        consumerProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ENVOY_KAFKA_ADDRESS);
-        consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        final Properties consumerProperties = Configs.makeConsumerConfiguration();
         consumerProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         consumerProperties.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 100);
         final KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties);
@@ -162,10 +149,7 @@ public class OriginalTests
         final int consumerCount = 10;
         final List<KafkaConsumer<String, String>> consumers = new ArrayList<>();
         for (int i = 0; i < consumerCount; ++i) {
-            final Properties consumerProperties = new Properties();
-            consumerProperties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ENVOY_KAFKA_ADDRESS);
-            consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-            consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+            final Properties consumerProperties = Configs.makeConsumerConfiguration();
             consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
             consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, String.format("test-%s", i));
             final KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProperties);
@@ -215,8 +199,7 @@ public class OriginalTests
 
         final String topic = "test_admin_client";
 
-        final Properties properties = new Properties();
-        properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, ENVOY_KAFKA_ADDRESS);
+        final Properties properties = Configs.makeAdminConfiguration();
         final AdminClient admin = KafkaAdminClient.create(properties);
 
         try {
