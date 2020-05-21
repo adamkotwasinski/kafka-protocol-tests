@@ -10,8 +10,8 @@ public abstract class BaseTest {
 
     @Before
     public void setUp() {
-        this.scraper = new Scraper();
-        this.scraper.collectInitialMetrics();
+        //        this.scraper = new Scraper();
+        //        this.scraper.collectInitialMetrics();
     }
 
 }
